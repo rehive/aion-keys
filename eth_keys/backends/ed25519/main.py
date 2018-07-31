@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from typing import Optional  # noqa: F401
 
-from .ecdsa import (
+from .ed25519 import (
     ecdsa_raw_recover,
     ecdsa_raw_sign,
     private_key_to_public_key,
@@ -16,7 +16,7 @@ from eth_keys.datatypes import (  # noqa: F401
 )
 
 
-class NativeECCBackend(BaseECCBackend):
+class TwistedEdwardsECCBackend(BaseECCBackend):
     def ecdsa_sign(self,
                    msg_hash: bytes,
                    private_key: PrivateKey) -> Signature:
