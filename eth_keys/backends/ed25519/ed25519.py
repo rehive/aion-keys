@@ -269,3 +269,15 @@ def verify(pub, sig, m):
     h2 = blake2b(sig[:32] + A + m)
     assert is_on_curve(R)
     return fast_multiply(B, 8 * s) == add(fast_multiply(R, 8), fast_multiply(pub, 8 * decode_int(h2)))
+
+
+def ecdsa_raw_recover(*args, **kwargs):
+    raise Exception("Not Implemented")
+
+
+def ecdsa_raw_sign(*args, **kwargs):
+    raise Exception("Not Implemented")
+
+
+def private_key_to_public_key(*args, **kwargs):
+    raise Exception("Not Implemented")
