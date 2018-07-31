@@ -223,7 +223,6 @@ def x_from_y(y):
     # -x^2 + y^2 = 1 + d * x^2 * y^2
     # implies
     # (y^2 - 1) / (d * y^2 + 1) = x^2
-    print y
     nom = (y*y-1) % Q
     den = (D*y*y+1) % Q
     return modular_sqrt((nom * inv(den, Q)) % Q, Q)
