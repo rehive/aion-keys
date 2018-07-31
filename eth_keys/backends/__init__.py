@@ -13,6 +13,7 @@ from .coincurve import (  # noqa: F401
     is_coincurve_available,
 )
 from .native import NativeECCBackend  # noqa: F401
+from .ed25519 import TwistedEdwardsECCBackend
 
 
 def get_default_backend_class() -> str:
