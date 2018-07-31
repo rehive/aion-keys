@@ -1,138 +1,136 @@
-"""
-Functions lifted from https://ed25519.cr.yp.to/python/ed25519.py
-"""
+#!/usr/bin/python
+
 import hashlib
-import hmac
-from typing import (Any, Callable, Optional, Tuple)  # noqa: F401
 
-from eth_utils import (
-    int_to_big_endian,
-    big_endian_to_int,
-)
-
-from eth_keys.constants import (
-    SECPK1_N as N,
-    SECPK1_G as G,
-    SECPK1_Gx as Gx,
-    SECPK1_Gy as Gy,
-    SECPK1_P as P,
-    SECPK1_A as A,
-    SECPK1_B as B,
-)
-from eth_keys.exceptions import (
-    BadSignature,
-)
-
-from eth_keys.utils.padding import pad32
-
-from .jacobian import (
-    inv,
-    fast_multiply,
-    fast_add,
-    jacobian_add,
-    jacobian_multiply,
-    from_jacobian,
-)
+b = 256
+q = 2 ** 255 - 19
+l = 2 ** 252 + 27742317777372353535851937790883648493
 
 
-def decode_public_key(public_key_bytes: bytes) -> Tuple[int, int]:
-    left = big_endian_to_int(public_key_bytes[0:32])
-    right = big_endian_to_int(public_key_bytes[32:64])
-    return left, right
+def H(m):
+    return hashlib.sha512(m).digest()
 
 
-def encode_raw_public_key(raw_public_key: Tuple[int, int]) -> bytes:
-    left, right = raw_public_key
-    return b''.join((
-        pad32(int_to_big_endian(left)),
-        pad32(int_to_big_endian(right)),
-    ))
+def expmod(b, e, m):
+    if e == 0:
+        return 1
+    t = expmod(b, e / 2, m) ** 2 % m
+    if e & 1:
+        t = t * b % m
+    return t
 
 
-def private_key_to_public_key(private_key_bytes: bytes) -> bytes:
-    private_key_as_num = big_endian_to_int(private_key_bytes)
-
-    if private_key_as_num >= N:
-        raise Exception("Invalid privkey")
-
-    raw_public_key = fast_multiply(G, private_key_as_num)
-    public_key_bytes = encode_raw_public_key(raw_public_key)
-    return public_key_bytes
+def inv(x):
+    return expmod(x, q - 2, q)
 
 
-def deterministic_generate_k(msg_hash: bytes,
-                             private_key_bytes: bytes,
-                             digest_fn: Callable[[], Any]=hashlib.sha256) -> int:
-    v_0 = b'\x01' * 32
-    k_0 = b'\x00' * 32
-
-    k_1 = hmac.new(k_0, v_0 + b'\x00' + private_key_bytes + msg_hash, digest_fn).digest()
-    v_1 = hmac.new(k_1, v_0, digest_fn).digest()
-    k_2 = hmac.new(k_1, v_1 + b'\x01' + private_key_bytes + msg_hash, digest_fn).digest()
-    v_2 = hmac.new(k_2, v_1, digest_fn).digest()
-
-    kb = hmac.new(k_2, v_2, digest_fn).digest()
-    k = big_endian_to_int(kb)
-    return k
+d = -121665 * inv(121666)
+I = expmod(2, (q - 1) / 4, q)
 
 
-def ecdsa_raw_sign(msg_hash: bytes,
-                   private_key_bytes: bytes) -> Tuple[int, int, int]:
-    z = big_endian_to_int(msg_hash)
-    k = deterministic_generate_k(msg_hash, private_key_bytes)
-
-    r, y = fast_multiply(G, k)
-    s_raw = inv(k, N) * (z + r * big_endian_to_int(private_key_bytes)) % N
-
-    v = 27 + ((y % 2) ^ (0 if s_raw * 2 < N else 1))
-    s = s_raw if s_raw * 2 < N else N - s_raw
-
-    return v - 27, r, s
+def xrecover(y):
+    xx = (y * y - 1) * inv(d * y * y + 1)
+    x = expmod(xx, (q + 3) / 8, q)
+    if (x * x - xx) % q != 0:
+        x = x * I % q
+    if x % 2 != 0:
+        x = q - x
+    return x
 
 
-def ecdsa_raw_verify(msg_hash: bytes,
-                     vrs: Tuple[int, int, int],
-                     public_key_bytes: bytes) -> bool:
-    raw_public_key = decode_public_key(public_key_bytes)
-
-    v, r, s = vrs
-    v += 27
-    if not (27 <= v <= 34):
-        raise BadSignature("Invalid Signature")
-
-    w = inv(s, N)
-    z = big_endian_to_int(msg_hash)
-
-    u1, u2 = z * w % N, r * w % N
-    x, y = fast_add(
-        fast_multiply(G, u1),
-        fast_multiply(raw_public_key, u2),
-    )
-    return bool(r == x and (r % N) and (s % N))
+By = 4 * inv(5)
+Bx = xrecover(By)
+B = [Bx % q, By % q]
 
 
-def ecdsa_raw_recover(msg_hash: bytes,
-                      vrs: Tuple[int, int, int]) -> bytes:
-    v, r, s = vrs
-    v += 27
+def edwards(P, Q):
+    x1 = P[0]
+    y1 = P[1]
+    x2 = Q[0]
+    y2 = Q[1]
+    x3 = (x1 * y2 + x2 * y1) * inv(1 + d * x1 * x2 * y1 * y2)
+    y3 = (y1 * y2 + x1 * x2) * inv(1 - d * x1 * x2 * y1 * y2)
+    return [x3 % q, y3 % q]
 
-    if not (27 <= v <= 34):
-        raise BadSignature("%d must in range 27-31" % v)
 
-    x = r
+def scalarmult(P, e):
+    if e == 0:
+        return [0, 1]
+    Q = scalarmult(P, e / 2)
+    Q = edwards(Q, Q)
+    if e & 1:
+        Q = edwards(Q, P)
+    return Q
 
-    xcubedaxb = (x * x * x + A * x + B) % P
-    beta = pow(xcubedaxb, (P + 1) // 4, P)
-    y = beta if v % 2 ^ beta % 2 else (P - beta)
-    # If xcubedaxb is not a quadratic residue, then r cannot be the x coord
-    # for a point on the curve, and so the sig is invalid
-    if (xcubedaxb - y * y) % P != 0 or not (r % N) or not (s % N):
-        raise BadSignature("Invalid signature")
-    z = big_endian_to_int(msg_hash)
-    Gz = jacobian_multiply((Gx, Gy, 1), (N - z) % N)
-    XY = jacobian_multiply((x, y, 1), s)
-    Qr = jacobian_add(Gz, XY)
-    Q = jacobian_multiply(Qr, inv(r, N))
-    raw_public_key = from_jacobian(Q)
 
-    return encode_raw_public_key(raw_public_key)
+def encodeint(y):
+    bits = [y >> i & 1 for i in range(b)]
+    return ''.join([chr(sum([bits[i * 8 + j] << j for j in range(8)]))
+                   for i in range(b / 8)])
+
+
+def encodepoint(P):
+    x = P[0]
+    y = P[1]
+    bits = [y >> i & 1 for i in range(b - 1)] + [x & 1]
+    return ''.join([chr(sum([bits[i * 8 + j] << j for j in range(8)]))
+                   for i in range(b / 8)])
+
+
+def bit(h, i):
+    return ord(h[i / 8]) >> i % 8 & 1
+
+
+def publickey(sk):
+    h = H(sk)
+    a = 2 ** (b - 2) + sum(2 ** i * bit(h, i) for i in range(3, b - 2))
+    A = scalarmult(B, a)
+    return encodepoint(A)
+
+
+def Hint(m):
+    h = H(m)
+    return sum(2 ** i * bit(h, i) for i in range(2 * b))
+
+
+def signature(m, sk, pk):
+    h = H(sk)
+    a = 2 ** (b - 2) + sum(2 ** i * bit(h, i) for i in range(3, b - 2))
+    r = Hint(''.join([h[i] for i in range(b / 8, b / 4)]) + m)
+    R = scalarmult(B, r)
+    S = (r + Hint(encodepoint(R) + pk + m) * a) % l
+    return encodepoint(R) + encodeint(S)
+
+
+def isoncurve(P):
+    x = P[0]
+    y = P[1]
+    return (-x * x + y * y - 1 - d * x * x * y * y) % q == 0
+
+
+def decodeint(s):
+    return sum(2 ** i * bit(s, i) for i in range(0, b))
+
+
+def decodepoint(s):
+    y = sum(2 ** i * bit(s, i) for i in range(0, b - 1))
+    x = xrecover(y)
+    if x & 1 != bit(s, b - 1):
+        x = q - x
+    P = [x, y]
+    if not isoncurve(P):
+        raise Exception('decoding point that is not on curve')
+    return P
+
+
+def checkvalid(s, m, pk):
+    if len(s) != b / 4:
+        raise Exception('signature length is wrong')
+    if len(pk) != b / 8:
+        raise Exception('public-key length is wrong')
+    R = decodepoint(s[0:b / 8])
+    A = decodepoint(pk)
+    S = decodeint(s[b / 8:b / 4])
+    h = Hint(encodepoint(R) + pk + m)
+    if scalarmult(B, S) != edwards(R, scalarmult(A, h)):
+        raise Exception('signature does not pass verification')
