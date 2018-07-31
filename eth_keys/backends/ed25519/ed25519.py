@@ -1,6 +1,10 @@
 from hashlib import blake2b as BLAKE2B
 
+#
+# From http://github.com/vbuterin/ed25519/blob/master/ed25519.py
 # http://ed25519.cr.yp.to/ed25519-20110926.pdf
+#
+# Known issues: http://github.com/vbuterin/ed25519/issues
 
 BITS = 256
 Q = 2**255 - 19
