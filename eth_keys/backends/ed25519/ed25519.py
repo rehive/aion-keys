@@ -1,4 +1,4 @@
-from sha3 import sha3_512 as SHA3512
+from hashlib import blake2b as BLAKE2B
 
 # http://ed25519.cr.yp.to/ed25519-20110926.pdf
 
@@ -183,8 +183,8 @@ def fast_multiply(p, n):
     return from_extended(multiply(to_extended(p), n, adder=add_extended))
 
 
-def sha3_512(x):
-    return SHA3512(x).digest()
+def blake2b(msg_hash: bytes) -> bytes:
+    return BLAKE2B(msg_hash).digest()
 
 
 # Converts a number into encoded form (for hashing)
@@ -233,7 +233,7 @@ def decode_pubkey(p):
 
 # Converts a privkey into a pubkey
 def privtopub(k):
-    h = sha3_512(k)
+    h = blake2b(k)
     a = 2 ** (BITS - 2) + (decode_int(h[:32]) % 2 ** (BITS - 2))
     a -= (a % 8)
     return fast_multiply(B, a)
@@ -241,13 +241,13 @@ def privtopub(k):
 
 # Signature algorithm
 def sign(k, m):
-    h = sha3_512(k)
+    h = blake2b(k)
     a = 2 ** (BITS - 2) + (decode_int(h[:32]) % 2 ** (BITS - 2))
     a -= (a % 8)
     A = fast_multiply(B, a)
     r = decode_int(h[32:])
     R = fast_multiply(B, r)
-    h2 = sha3_512(encode_pubkey(R) + encode_pubkey(A) + m)
+    h2 = blake2b(encode_pubkey(R) + encode_pubkey(A) + m)
     s = (r + decode_int(h2) * a) % L
     return encode_pubkey(R) + encode32(s)
 
@@ -259,6 +259,6 @@ def verify(pub, sig, m):
     if s >= L:
         return False
     A = encode_pubkey(pub)
-    h2 = sha3_512(sig[:32] + A + m)
+    h2 = blake2b(sig[:32] + A + m)
     assert is_on_curve(R)
     return fast_multiply(B, 8 * s) == add(fast_multiply(R, 8), fast_multiply(pub, 8 * decode_int(h2)))
