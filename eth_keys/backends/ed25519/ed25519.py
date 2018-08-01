@@ -258,7 +258,8 @@ def verify(pub, sig, m):
     return fast_multiply(B, 8 * s) == add(fast_multiply(R, 8), fast_multiply(pub, 8 * big_endian_to_int(h2)))
 
 
-def ecdsa_raw_recover(*args, **kwargs):
+def ecdsa_raw_recover(msg_hash: bytes,
+                      vrs: Tuple[int, int, int]) -> bytes:
     raise Exception("Not Implemented")
 
 
@@ -267,5 +268,5 @@ def ecdsa_raw_sign(msg_hash: bytes,
     raise Exception("Not Implemented")
 
 
-def private_key_to_public_key(*args, **kwargs):
+def private_key_to_public_key(private_key_bytes: bytes) -> bytes:
     raise Exception("Not Implemented")
