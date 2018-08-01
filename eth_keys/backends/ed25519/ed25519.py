@@ -1,5 +1,6 @@
 from hashlib import blake2b as BLAKE2B
 
+from typing import (Any, Callable, Optional, Tuple,)  # noqa: F401
 #
 # From http://github.com/vbuterin/ed25519/blob/master/ed25519.py
 # http://ed25519.cr.yp.to/ed25519-20110926.pdf
@@ -200,11 +201,11 @@ def blake2b(msg_hash: bytes) -> bytes:
 
 
 # Standard-form encoding for a public key
-def encode_pubkey(p):
-    v = p[1]
-    if p[0] > Q - p[0]:
-        v |= 2**255
-    return int_to_big_endian(v)
+def encode_raw_public_key(raw_public_key: Tuple[int, int]) -> bytes:
+    left, right = raw_public_key
+    if left > Q - left:
+        right |= 2**255
+    return int_to_big_endian(right)
 
 
 def x_from_y(y):
@@ -216,16 +217,15 @@ def x_from_y(y):
     return modular_sqrt((nom * inv(den, Q)) % Q, Q)
 
 
-def decode_pubkey(p):
-    v = big_endian_to_int(p)
-    y = v % 2**255
-    x = x_from_y(y)
-    if (x > Q - x) ^ (v >> 255):
-        x = Q - x
-    return (x, y)
+def decode_public_key(public_key_bytes: bytes) -> Tuple[int, int]:
+    v = big_endian_to_int(public_key_bytes)
+    right = v % 2**255
+    left = x_from_y(right)
+    if (left > Q - left) ^ (v >> 255):
+        left = Q - left
+    return (left, right)
 
 
-# Converts a privkey into a pubkey
 def privtopub(k):
     h = blake2b(k)
     a = 2 ** (BITS - 2) + (big_endian_to_int(h[:32]) % 2 ** (BITS - 2))
@@ -241,18 +241,18 @@ def sign(k, m):
     A = fast_multiply(B, a)
     r = big_endian_to_int(h[32:])
     R = fast_multiply(B, r)
-    h2 = blake2b(encode_pubkey(R) + encode_pubkey(A) + m)
+    h2 = blake2b(encode_raw_public_key(R) + encode_raw_public_key(A) + m)
     s = (r + big_endian_to_int(h2) * a) % L
-    return encode_pubkey(R) + int_to_big_endian(s)
+    return encode_raw_public_key(R) + int_to_big_endian(s)
 
 
 # Verification algorithm
 def verify(pub, sig, m):
-    R = decode_pubkey(sig[:32])
+    R = decode_public_key(sig[:32])
     s = big_endian_to_int(sig[32:])
     if s >= L:
         return False
-    A = encode_pubkey(pub)
+    A = encode_raw_public_key(pub)
     h2 = blake2b(sig[:32] + A + m)
     assert is_on_curve(R)
     return fast_multiply(B, 8 * s) == add(fast_multiply(R, 8), fast_multiply(pub, 8 * big_endian_to_int(h2)))
