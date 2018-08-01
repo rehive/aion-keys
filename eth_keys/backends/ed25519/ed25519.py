@@ -17,6 +17,11 @@ from eth_keys.constants import (
     ED25519_BITS as BITS,
 )
 
+from eth_utils import (
+    int_to_big_endian,
+    big_endian_to_int,
+)
+
 
 # Modular inverse
 def inv(a, n):
@@ -194,29 +199,12 @@ def blake2b(msg_hash: bytes) -> bytes:
     return BLAKE2B(msg_hash).digest()
 
 
-# Converts a number into encoded form (for hashing)
-def encode32(i):
-    o = ''
-    for _ in range(32):
-        o += chr(i % 256)
-        i /= 256
-    return o
-
-
-# Converts back from encoded form
-def decode_int(s):
-    o = 0
-    for c in s[::-1]:
-        o = o * 256 + ord(c)
-    return o
-
-
 # Standard-form encoding for a public key
 def encode_pubkey(p):
     v = p[1]
     if p[0] > Q - p[0]:
         v |= 2**255
-    return encode32(v)
+    return int_to_big_endian(v)
 
 
 def x_from_y(y):
@@ -229,7 +217,7 @@ def x_from_y(y):
 
 
 def decode_pubkey(p):
-    v = decode_int(p)
+    v = big_endian_to_int(p)
     y = v % 2**255
     x = x_from_y(y)
     if (x > Q - x) ^ (v >> 255):
@@ -240,7 +228,7 @@ def decode_pubkey(p):
 # Converts a privkey into a pubkey
 def privtopub(k):
     h = blake2b(k)
-    a = 2 ** (BITS - 2) + (decode_int(h[:32]) % 2 ** (BITS - 2))
+    a = 2 ** (BITS - 2) + (big_endian_to_int(h[:32]) % 2 ** (BITS - 2))
     a -= (a % 8)
     return fast_multiply(B, a)
 
@@ -248,26 +236,26 @@ def privtopub(k):
 # Signature algorithm
 def sign(k, m):
     h = blake2b(k)
-    a = 2 ** (BITS - 2) + (decode_int(h[:32]) % 2 ** (BITS - 2))
+    a = 2 ** (BITS - 2) + (big_endian_to_int(h[:32]) % 2 ** (BITS - 2))
     a -= (a % 8)
     A = fast_multiply(B, a)
-    r = decode_int(h[32:])
+    r = big_endian_to_int(h[32:])
     R = fast_multiply(B, r)
     h2 = blake2b(encode_pubkey(R) + encode_pubkey(A) + m)
-    s = (r + decode_int(h2) * a) % L
-    return encode_pubkey(R) + encode32(s)
+    s = (r + big_endian_to_int(h2) * a) % L
+    return encode_pubkey(R) + int_to_big_endian(s)
 
 
 # Verification algorithm
 def verify(pub, sig, m):
     R = decode_pubkey(sig[:32])
-    s = decode_int(sig[32:])
+    s = big_endian_to_int(sig[32:])
     if s >= L:
         return False
     A = encode_pubkey(pub)
     h2 = blake2b(sig[:32] + A + m)
     assert is_on_curve(R)
-    return fast_multiply(B, 8 * s) == add(fast_multiply(R, 8), fast_multiply(pub, 8 * decode_int(h2)))
+    return fast_multiply(B, 8 * s) == add(fast_multiply(R, 8), fast_multiply(pub, 8 * big_endian_to_int(h2)))
 
 
 def ecdsa_raw_recover(*args, **kwargs):
