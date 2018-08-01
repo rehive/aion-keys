@@ -262,7 +262,8 @@ def ecdsa_raw_recover(*args, **kwargs):
     raise Exception("Not Implemented")
 
 
-def ecdsa_raw_sign(*args, **kwargs):
+def ecdsa_raw_sign(msg_hash: bytes,
+                   private_key_bytes: bytes) -> Tuple[int, int, int]:
     raise Exception("Not Implemented")
 
 
