@@ -1,9 +1,13 @@
 from typing import Tuple  # noqa: F401
 
 from eth_keys.constants import (
-    SECPK1_P as P,
-    SECPK1_N as N,
-    SECPK1_A as A,
+    ED25519_Q as Q,
+    ED25519_B as B,
+    ED25519_Bx as Bx,
+    ED25519_By as By,
+    ED25519_D as D,
+    ED25519_L as L,
+    ED25519_BITS as BITS,
 )
 
 
@@ -175,11 +179,3 @@ def add_extended(p, q):
 
 def fast_multiply(p, n):
     return from_extended(multiply(to_extended(p), n, adder=add_extended))
-def fast_multiply(a: Tuple[int, int],
-                  n: int) -> Tuple[int, int]:
-    raise Exception("Not Implemented")
-
-
-def fast_add(a: Tuple[int, int],
-             b: Tuple[int, int]) -> Tuple[int, int]:
-    raise Exception("Not Implemented")

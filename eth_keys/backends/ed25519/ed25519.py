@@ -61,26 +61,6 @@ def decode_public_key(public_key_bytes: bytes) -> Tuple[int, int]:
     return (left, right)
 
 
-def privtopub(k):
-    h = blake2b(k)
-    a = 2 ** (BITS - 2) + (big_endian_to_int(h[:32]) % 2 ** (BITS - 2))
-    a -= (a % 8)
-    return fast_multiply(B, a)
-
-
-# Signature algorithm
-def sign(k, m):
-    h = blake2b(k)
-    a = 2 ** (BITS - 2) + (big_endian_to_int(h[:32]) % 2 ** (BITS - 2))
-    a -= (a % 8)
-    A = fast_multiply(B, a)
-    r = big_endian_to_int(h[32:])
-    R = fast_multiply(B, r)
-    h2 = blake2b(encode_raw_public_key(R) + encode_raw_public_key(A) + m)
-    s = (r + big_endian_to_int(h2) * a) % L
-    return encode_raw_public_key(R) + int_to_big_endian(s)
-
-
 # Verification algorithm
 def verify(pub, sig, m):
     R = decode_public_key(sig[:32])
