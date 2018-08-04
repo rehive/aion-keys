@@ -86,7 +86,15 @@ def ecdsa_raw_recover(msg_hash: bytes,
 
 def ecdsa_raw_sign(msg_hash: bytes,
                    private_key_bytes: bytes) -> Tuple[int, int, int]:
-    raise Exception("Not Implemented")
+    h = blake2b(private_key_bytes)
+    a = 2 ** (BITS - 2) + (big_endian_to_int(h[:32]) % 2 ** (BITS - 2))
+    a -= (a % 8)
+    A = fast_multiply(B, a)
+    r = big_endian_to_int(h[32:])
+    R = fast_multiply(B, r)
+    h2 = blake2b(encode_raw_public_key(R) + encode_raw_public_key(A) + msg_hash)
+    s = (r + big_endian_to_int(h2) * a) % L
+    return R[0], R[1], s
 
 
 def private_key_to_public_key(private_key_bytes: bytes) -> bytes:
