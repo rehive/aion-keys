@@ -80,7 +80,8 @@ def ecdsa_verify(msg_hash: bytes,
 
 def ecdsa_raw_recover(msg_hash: bytes,
                       vrs: Tuple[int, int, int]) -> bytes:
-    raise Exception("Not Implemented")
+    raise NotImplementedError("ED25519 does not allow you to recover the "
+                              "public key from the signature and msg_hash")
 
 
 def ecdsa_raw_sign(msg_hash: bytes,
