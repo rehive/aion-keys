@@ -7,59 +7,15 @@ from typing import (Any, Tuple,)  # noqa: F401
 #
 # Known issues: http://github.com/vbuterin/ed25519/issues
 
-
-from eth_keys.constants import (
-    ED25519_Q as Q,
-    ED25519_B as B,
-    ED25519_Bx as Bx,
-    ED25519_By as By,
-    ED25519_D as D,
-    ED25519_L as L,
-    ED25519_BITS as BITS,
+from ed25519 import (
+    SigningKey,
+    VerifyingKey,
 )
 
 from eth_utils import (
     int_to_big_endian,
     big_endian_to_int,
 )
-
-from .edwards import (
-    inv,
-    modular_sqrt,
-    is_on_curve,
-    add,
-    fast_multiply,
-)
-
-def blake2b(msg_hash: bytes) -> bytes:
-    return BLAKE2B(msg_hash).digest()
-
-
-# Standard-form encoding for a public key
-def encode_raw_public_key(raw_public_key: Tuple[int, int]) -> bytes:
-    left, right = raw_public_key
-    if left > Q - left:
-        right |= 2**255
-    return int_to_big_endian(right)
-
-
-def x_from_y(y):
-    # -x^2 + y^2 = 1 + d * x^2 * y^2
-    # implies
-    # (y^2 - 1) / (d * y^2 + 1) = x^2
-    nom = (y*y-1) % Q
-    den = (D*y*y+1) % Q
-    return modular_sqrt((nom * inv(den, Q)) % Q, Q)
-
-
-def decode_public_key(public_key_bytes: bytes) -> Tuple[int, int]:
-    v = big_endian_to_int(public_key_bytes)
-    right = v % 2**255
-    left = x_from_y(right)
-    if (left > Q - left) ^ (v >> 255):
-        left = Q - left
-    return (left, right)
-
 
 # Verification algorithm
 def ecdsa_verify(msg_hash: bytes,
