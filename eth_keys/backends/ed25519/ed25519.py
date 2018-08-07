@@ -21,17 +21,12 @@ from eth_utils import (
 def ecdsa_verify(msg_hash: bytes,
                  signature: Tuple[int, int, int],
                  public_key: bytes) ->bool:
-    R = (signature[0], signature[1],)
-    s = signature[2]
-    if s >= L:
-        return False
-    h2 = blake2b( encode_raw_public_key(R) + public_key + msg_hash)
-    assert is_on_curve(R)
-    v = add(
-        fast_multiply(R, 8),
-        fast_multiply(public_key, 8 * big_endian_to_int(h2))
-    )
-    return bool(fast_multiply(B, 8 * s) == v)
+    v, R, S = signature
+    signature_bytes = int_to_big_endian(R) + int_to_big_endian(S)
+    if not v == 1:
+        raise Exception("Bad Signature")
+    verify_key = VerifyingKey(public_key)
+    return verify_key.verify(msg_hash, signature_bytes)
 
 
 def ecdsa_raw_recover(msg_hash: bytes,
