@@ -45,9 +45,5 @@ def ecdsa_raw_sign(msg_hash: bytes,
 
 
 def private_key_to_public_key(private_key_bytes: bytes) -> bytes:
-    h = blake2b(private_key_bytes)
-    a = 2 ** (BITS - 2) + (big_endian_to_int(h[:32]) % 2 ** (BITS - 2))
-    a -= (a % 8)
-    raw_public_key = fast_multiply(B, a)
-    public_key_bytes = encode_raw_public_key(raw_public_key)
-    return public_key_bytes
+    private_key = SigningKey(private_key_bytes)
+    return private_key.get_verifying_key().to_bytes()
