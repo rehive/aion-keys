@@ -45,5 +45,5 @@ def ecdsa_raw_sign(msg_hash: bytes,
 
 
 def private_key_to_public_key(private_key_bytes: bytes) -> bytes:
-    private_key = SigningKey(private_key_bytes)
+    private_key = SigningKey(bytes(private_key_bytes))
     return private_key.get_verifying_key().to_bytes()
