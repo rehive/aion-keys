@@ -1,5 +1,3 @@
-from hashlib import blake2b as BLAKE2B
-
 from typing import (Any, Tuple,)  # noqa: F401
 #
 # From http://github.com/vbuterin/ed25519/blob/master/ed25519.py
