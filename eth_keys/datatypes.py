@@ -13,6 +13,7 @@ from eth_utils import (
     keccak,
     to_checksum_address,
     to_normalized_address,
+    blake2b
 )
 
 from eth_keys.utils.address import (
@@ -259,11 +260,13 @@ class Signature(ByteString, LazyBackend):
             except ValidationError as err:
                 raise BadSignature(str(err))
         elif vrs:
-            v, r, s, = vrs
+            v, r, s, signature_bytes = vrs
             try:
                 self.v = v
                 self.r = r
                 self.s = s
+                self.signature_bytes = signature_bytes
+                self._signature_bytes = signature_bytes
             except ValidationError as err:
                 raise BadSignature(str(err))
         else:
@@ -297,7 +300,7 @@ class Signature(ByteString, LazyBackend):
     def r(self, value: int) -> None:
         validate_integer(value)
         validate_gte(value, 0)
-        validate_lt_secpk1n(value)
+        # validate_lt_secpk1n(value)
 
         self._r = value
 
@@ -312,7 +315,7 @@ class Signature(ByteString, LazyBackend):
     def s(self, value: int) -> None:
         validate_integer(value)
         validate_gte(value, 0)
-        validate_lt_secpk1n(value)
+        # validate_lt_secpk1n(value)
 
         self._s = value
 
@@ -329,7 +332,7 @@ class Signature(ByteString, LazyBackend):
         return self.__bytes__()
 
     def __hash__(self) -> int:
-        return big_endian_to_int(keccak(self.to_bytes()))
+        return big_endian_to_int(blake2b(self.to_bytes(), digest_size=32))
 
     def __bytes__(self) -> bytes:
         vb = int_to_byte(self.v)
@@ -372,7 +375,7 @@ class Signature(ByteString, LazyBackend):
         return self.backend.ecdsa_verify(message_hash, self, public_key)
 
     def recover_public_key_from_msg(self, message: bytes) -> PublicKey:
-        message_hash = keccak(message)
+        message_hash = blake2b(message)
         return self.recover_public_key_from_msg_hash(message_hash)
 
     def recover_public_key_from_msg_hash(self, message_hash: bytes) -> PublicKey:
