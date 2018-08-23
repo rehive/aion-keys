@@ -260,12 +260,13 @@ class Signature(ByteString, LazyBackend):
             except ValidationError as err:
                 raise BadSignature(str(err))
         elif vrs:
-            v, r, s, signature_bytes = vrs
+            v, r, s, signature_bytes, total_sig = vrs
             try:
                 self.v = v
                 self.r = r
                 self.s = s
                 self.signature_bytes = signature_bytes
+                self.total_sig = total_sig
                 self._signature_bytes = signature_bytes
             except ValidationError as err:
                 raise BadSignature(str(err))

@@ -45,9 +45,10 @@ def ecdsa_raw_sign(msg_hash: bytes,
     print(signature_bytes[32:64])
     R = big_endian_to_int(signature_bytes[:32])
     S = big_endian_to_int(signature_bytes[32:])
+    total_sig = big_endian_to_int(signature_bytes)
     print(R)
     print(S)
-    return 1, R, S, signature_bytes
+    return 1, R, S, signature_bytes, total_sig
 
 
 def private_key_to_public_key(private_key_bytes: bytes) -> bytes:
