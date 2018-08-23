@@ -21,8 +21,8 @@ class TwistedEdwardsECCBackend(BaseECCBackend):
     def ecdsa_sign(self,
                    msg_hash: bytes,
                    private_key: PrivateKey) -> Signature:
-        signature_vrs = ecdsa_raw_sign(msg_hash, private_key.to_bytes())
-        signature = Signature(vrs=signature_vrs, backend=self)
+        signature_bytes = ecdsa_raw_sign(msg_hash, private_key.to_bytes())
+        signature = Signature(signature_bytes=signature_bytes, backend=self)
         return signature
 
     def ecdsa_verify(self,

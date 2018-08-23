@@ -72,5 +72,5 @@ def validate_private_key_bytes(value: Any) -> None:
 
 def validate_signature_bytes(value: Any) -> None:
     validate_bytes(value)
-    if len(value) != 65:
+    if len(value) != 64:
         raise ValidationError("Unexpected signature format.  Must be length 65 byte string")

@@ -256,18 +256,16 @@ class Signature(ByteString, LazyBackend):
             try:
                 self.r = big_endian_to_int(signature_bytes[0:32])
                 self.s = big_endian_to_int(signature_bytes[32:64])
-                self.v = ord(signature_bytes[64:65])
+                self.v = 1
+                self.signature_bytes = signature_bytes
             except ValidationError as err:
                 raise BadSignature(str(err))
         elif vrs:
-            v, r, s, signature_bytes, total_sig = vrs
+            v, r, s = vrs
             try:
                 self.v = v
                 self.r = r
                 self.s = s
-                self.signature_bytes = signature_bytes
-                self.total_sig = total_sig
-                self._signature_bytes = signature_bytes
             except ValidationError as err:
                 raise BadSignature(str(err))
         else:
