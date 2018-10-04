@@ -10,6 +10,7 @@ from eth_utils import (
     big_endian_to_int,
 )
 
+
 # Verification algorithm
 def ecdsa_verify(msg_hash: bytes,
                  signature: Tuple[int, int, int],
@@ -30,11 +31,9 @@ def ecdsa_raw_recover(msg_hash: bytes,
 
 def ecdsa_raw_sign(msg_hash: bytes,
                    private_key_bytes: bytes) -> Tuple[int, int, int]:
-    private_key = SigningKey(private_key_bytes)
+    private_key = SigningKey(bytes(private_key_bytes))
     signature_bytes = private_key.sign(msg_hash)
-    R = big_endian_to_int(signature_bytes[:32])
-    S = big_endian_to_int(signature_bytes[32:])
-    return 1, R, S
+    return signature_bytes
 
 
 def private_key_to_public_key(private_key_bytes: bytes) -> bytes:
