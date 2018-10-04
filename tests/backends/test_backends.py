@@ -5,6 +5,7 @@ import pytest
 from eth_keys import KeyAPI
 from eth_keys.backends import CoinCurveECCBackend
 from eth_keys.backends import NativeECCBackend
+from eth_keys.backends import TwistedEdwardsECCBackend
 
 from eth_utils import (
     keccak,
@@ -17,6 +18,7 @@ MSGHASH = keccak(MSG)
 
 backends = [
     NativeECCBackend(),
+    TwistedEdwardsECCBackend(),
 ]
 
 try:

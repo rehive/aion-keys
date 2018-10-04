@@ -13,13 +13,14 @@ from .coincurve import (  # noqa: F401
     is_coincurve_available,
 )
 from .native import NativeECCBackend  # noqa: F401
+from .ed25519 import TwistedEdwardsECCBackend
 
 
 def get_default_backend_class() -> str:
     if is_coincurve_available():
         return 'eth_keys.backends.CoinCurveECCBackend'
     else:
-        return 'eth_keys.backends.NativeECCBackend'
+        return 'eth_keys.backends.TwistedEdwardsECCBackend'
 
 
 def get_backend_class(import_path: str=None) -> Type[BaseECCBackend]:
